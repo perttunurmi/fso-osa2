@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Phonebook from './components/Phonebook'
 import axios from 'axios'
+import personsService from './services/persons'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -14,23 +15,26 @@ const App = () => {
       })
   }, [])
 
+  const [name, setName] = useState('')
+  const [number, setNumber] = useState('')
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
   const handleNewName = (event) => {
     console.log("onChange:", event.target.value)
+    setName(event.target.value)
     setNewName(event.target.value)
   }
 
   const handleNewNumber = (event) => {
     console.log("onChange: ", event.target.value)
     setNewNumber(event.target.value)
+    setNumber(event.target.value)
   }
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    console.log("Handle submit: ", event.target.value)
 
     const personObject = {
       name: newName,
@@ -38,21 +42,47 @@ const App = () => {
     }
 
     persons.map((person) => person.name).includes(newName)
-      ? alert(`${newName} is already added to phonebook`)
-      : setPersons(persons.concat(personObject))
+      ? window.confirm(`${newName} is already added to phonebook. Do you want to replace the old number with a new one?`)
+        ? personsService.update(
+          persons.find((person) =>
+            person.name === personObject.name)
+            .id, personObject)
+          .then(_reponse => {
+            personsService.getAll().then(response =>
+              setPersons(response.data)
+            )
+          })
+        : console.log("Ei lisätä")
+      : personsService.create(personObject).then(response => {
+        setPersons(persons.concat(response.data))
+      })
 
-    console.log("Lisättävä henkilö:", personObject)
+    setName('')
+    setNumber('')
+    setNewName('')
+    setNewNumber('')
+    setFilter('')
+  }
+
+  const deletePerson = (person) => {
+    window.confirm(`Delete ${person.name}?`)
+      ? personsService.deleteFromDb(person.id).then(_response => {
+        personsService.getAll().then(response => {
+          setPersons(response.data)
+        })
+      })
+      : console.log("Ei poistetakkaan")
   }
 
   const handleFilter = (event) => {
     setFilter(event.target.value)
   }
 
-  const filteredPersons = persons.filter((p) => p.name
-    .toLowerCase().includes(filter.toLowerCase()))
+  const filteredPersons = persons.filter((p) =>
+    p.name.toLowerCase().includes(filter.toLowerCase()))
 
   return (
-    <Phonebook filteredPersons={filteredPersons} handleFilter={handleFilter} handleNewName={handleNewName} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} />
+    <Phonebook filteredPersons={filteredPersons} handleFilter={handleFilter} handleNewName={handleNewName} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} name={name} number={number} deletePerson={deletePerson} />
   )
 }
 
