@@ -1,11 +1,13 @@
 import Numbers from './Number'
 import Filter from './Filter'
 import Add from './Add'
+import Notification from './Notification'
 
-const Phonebook = ({ filteredPersons, handleFilter, handleNewName, handleNewNumber, handleSubmit, name, number, deletePerson }) => {
+const Phonebook = ({ filteredPersons, handleFilter, handleNewName, handleNewNumber, handleSubmit, name, number, deletePerson, message, style }) => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} style={style} />
       <Filter handleFilter={handleFilter} />
       <h2>add a new</h2>
       <form>

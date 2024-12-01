@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Phonebook from './components/Phonebook'
 import axios from 'axios'
 import personsService from './services/persons'
+import './index.css'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -20,6 +21,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [message, setMessage] = useState(null)
+  const [status, setStatus] = useState('ok')
 
   const handleNewName = (event) => {
     console.log("onChange:", event.target.value)
@@ -42,20 +45,42 @@ const App = () => {
     }
 
     persons.map((person) => person.name).includes(newName)
+
       ? window.confirm(`${newName} is already added to phonebook. Do you want to replace the old number with a new one?`)
+
         ? personsService.update(
           persons.find((person) =>
             person.name === personObject.name)
             .id, personObject)
           .then(_reponse => {
-            personsService.getAll().then(response =>
+            personsService.getAll().then(response => {
               setPersons(response.data)
+              setStatus("ok")
+              setMessage(`Muutettiin ${personObject.name}`)
+              setTimeout(() => {
+                setMessage(null)
+              }, 3000)
+            }
             )
-          })
+          }).catch(_error => {
+            setStatus("error")
+            setMessage(`Information of ${personObject.name} has already been removed from server`)
+            setTimeout(() => {
+              setMessage(null)
+            }, 5000)
+          }
+          )
         : console.log("Ei lisätä")
+
       : personsService.create(personObject).then(response => {
         setPersons(persons.concat(response.data))
+        setStatus("ok")
+        setMessage(`Lisättiin ${personObject.name}`)
+        setTimeout(() => {
+          setMessage(null)
+        }, 3000)
       })
+
 
     setName('')
     setNumber('')
@@ -69,7 +94,11 @@ const App = () => {
       ? personsService.deleteFromDb(person.id).then(_response => {
         personsService.getAll().then(response => {
           setPersons(response.data)
+          setStatus("ok")
+          setMessage(`Poistettiin ${person.name}`)
+          setTimeout(() => setMessage(null), 3000)
         })
+
       })
       : console.log("Ei poistetakkaan")
   }
@@ -82,7 +111,7 @@ const App = () => {
     p.name.toLowerCase().includes(filter.toLowerCase()))
 
   return (
-    <Phonebook filteredPersons={filteredPersons} handleFilter={handleFilter} handleNewName={handleNewName} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} name={name} number={number} deletePerson={deletePerson} />
+    <Phonebook filteredPersons={filteredPersons} handleFilter={handleFilter} handleNewName={handleNewName} handleNewNumber={handleNewNumber} handleSubmit={handleSubmit} name={name} number={number} deletePerson={deletePerson} message={message} style={status} />
   )
 }
 
