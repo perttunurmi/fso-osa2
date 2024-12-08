@@ -1,63 +1,15 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import Countries from './components/countries'
+import Find from './components/find'
+const api_key = import.meta.env.VITE_SOME_KEY
 
-const Find = ({ value, handleChange, text }) => {
-  return (
-    <>
-      <label>{text} </label>
-      <input type="text" value={value} onChange={handleChange} />
-    </>
-  )
-}
-
-const Kielet = ({ kielet }) => {
-  const lista = Object.keys(kielet).map(kieli =>
-    <li key={kieli}>{kielet[kieli]}</li>
-  )
-
-  return (
-    <ul>
-      {lista}
-    </ul>
-  )
-}
-
-const Countries = ({ countries, onChange }) => {
-  if (countries.length > 10) {
-    return (
-      <div>
-        Too many matches, specify another filter
-      </div>
-    )
-  }
-
-  if (countries.length > 1) {
-    return (
-      countries.map(country =>
-        <div key={country.name.common} onClick={onChange}>
-          {country.name.common} <button>show</button >
-        </div>
-      )
-    )
-  }
-
-  return (
-    countries.map(country =>
-      <div key={country.name.common}>
-        <h2>{country.name.common}</h2>
-        <div>capital {country.capital}</div>
-        <div>area {country.area}</div>
-        <h3>languages:</h3>
-        <Kielet kielet={country.languages} />
-        <img src={country.flags.svg} alt={`${country.name.common} lippu`} width={"150px"} />
-      </div>
-    )
-  )
-}
 
 function App() {
   const [countries, setCountries] = useState(null)
   const [filter, setFilter] = useState("")
+  const [weather, setWeather] = useState(null)
+  const [filteredCountries, setFilteredCountries] = useState([])
 
   useEffect(() => {
     axios
@@ -68,6 +20,23 @@ function App() {
       })
   }, [])
 
+  useEffect(() => {
+    if (countries != null) {
+      setFilteredCountries(countries.filter(country =>
+        country.name.common.toLowerCase()
+          .includes(filter.toLowerCase())))
+    }
+  }, [filter], [countries])
+
+  useEffect(() => {
+    if (countries != null) {
+      console.log(filteredCountries)
+      if (filteredCountries.length === 1 && filteredCountries[0].capital[0] !== weather.name || weather == null) {
+        changeWeather()
+      }
+    }
+  }, [filteredCountries])
+
   if (!countries) { return null; }
 
   const handleFilter = (event) => {
@@ -76,15 +45,23 @@ function App() {
   }
 
   const showNew = (e) => {
-    console.log(e)
+    setFilter(e.target.parentNode.firstChild.data)
   }
 
-  const FilteredCountries = countries.filter(country => country.name.common.toLowerCase().includes(filter.toLowerCase()))
+  const changeWeather = () => {
+    const capital = filteredCountries[0].capital
+    axios
+      .get(`https://api.openweathermap.org/data/2.5/weather?q=${capital}&appid=${api_key}`)
+      .then(response => {
+        setWeather(response.data)
+        console.log(response.data)
+      })
+  }
 
   return (
     <>
       <Find value={filter} handleChange={handleFilter} text="find countries" />
-      <Countries countries={FilteredCountries} onChange={showNew} />
+      <Countries countries={filteredCountries} onChange={showNew} weather={weather} changeWeather={changeWeather} />
     </>
   )
 }
